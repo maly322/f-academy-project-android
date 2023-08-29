@@ -13,5 +13,12 @@ class GetCulturalPlacesUseCase @Inject constructor(
     //  Implementuj metódu build, ktorá vráti zoznam miest.
     //  Využi ApiManager a namapuj CulturalPlaces na List<Place>.
     //  Mali by stačiť iba nasledujúce properties: id, longitude, latitude, name, type, note,
-    override suspend fun build(args: Unit): List<Place> = TODO("Just keep coding, just keep coding...")
+    override suspend fun build(args: Unit): List<Place> {
+        val culturalPlacesResponse = apiManager.getCulturalPlaces()
+
+        return culturalPlacesResponse.features.map {
+            Place(id = it.properties.ogcFid, name = it.properties.name, type = it.type)
+        }
+    }
 }
+

@@ -1,14 +1,23 @@
 package app.futured.academyproject.injection.modules
 
+import app.futured.academyproject.BuildConfig
 import app.futured.academyproject.data.remote.ApiService
+import app.futured.academyproject.tools.Constants
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.Interceptor
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Response
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import timber.log.Timber
 import javax.inject.Singleton
+import kotlin.concurrent.timer
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -19,7 +28,11 @@ class NetworkModule {
     //  Nezabudni nastavit level na HttpLoggingInterceptor.Level.BODY a na logovanie využi Timber
     @Provides
     @Singleton
-    fun provideLoggingInterceptor(): Interceptor = TODO("Life is like a box of code. You never know what you'll write next.")
+    fun provideLoggingInterceptor(): Interceptor =
+        HttpLoggingInterceptor(logger = HttpLoggingInterceptor.Logger { Timber.d(it) }).apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+//        TODO("Life is like a box of code. You never know what you'll write next.")
 
     // TODO Krok 4:
     //  Vytvor OkHttp vlienta HttpLoggingInterceptor a pridaj k nemu logging interceptor
@@ -27,7 +40,14 @@ class NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         loggingInterceptor: Interceptor,
-    ): OkHttpClient = TODO("May the code be with you.")
+    ): OkHttpClient {
+        val okHttpClient = OkHttpClient.Builder()
+        okHttpClient.addInterceptor(loggingInterceptor)
+        return okHttpClient.build()
+
+    }
+
+//        TODO("May the code be with you.")
 
     // TODO Krok 5:
     //  Za pomoci Retrofitu vytvor ApiService, ktorý automaticky implementuje definíciu z ApiService na reálnu implementáciu.
@@ -39,5 +59,14 @@ class NetworkModule {
     fun provideRetrofitService(
         okHttpClient: OkHttpClient,
         json: Json,
-    ): ApiService = TODO("Channel your inner Jára Cimrman, inventor of Android and Kotlin")
+    ): ApiService {
+        return Retrofit.Builder()
+            .baseUrl(Constants.Api.BASE_PROD_URL)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .validateEagerly(BuildConfig.DEBUG) // Make sure to import BuildConfig if not already imported
+            .build()
+            .create(ApiService::class.java)
+    }
+//        TODO("Channel your inner Jára Cimrman, inventor of Android and Kotlin")
 }
